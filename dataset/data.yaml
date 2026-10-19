@@ -1,5 +1,4 @@
 # YOLOv8 Road Surface Defect Detection Config
-# Generated for Raspberry Pi 4B & Portronics Webcam Pothole Detection System
 path: C:/Users/sansk/OneDrive/Desktop/pds/dataset
 train: images/train
 val: images/val
