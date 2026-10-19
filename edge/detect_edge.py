@@ -80,6 +80,7 @@ class EdgePotholeDetector:
                 print("[Detector] Backend initialized: ONNXRuntime (ARM NEON / Multithreaded CPU)")
             except Exception as e:
                 print(f"[Detector] ONNXRuntime unavailable ({e}). Falling back to OpenCV DNN.")
+                print("           (Tip: Activate venv for 2.5x speedup: source ~/pds_venv/bin/activate)")
                 self.net = cv2.dnn.readNetFromONNX(str(chosen_path))
                 self.net.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
                 self.net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
@@ -112,15 +113,18 @@ class EdgePotholeDetector:
         """
         h_roi, w_roi = road_roi.shape[:2]
         
-        # 1. Letterbox resize to 320x320
-        blob_img = cv2.resize(road_roi, (MODEL_INPUT_WIDTH, MODEL_INPUT_HEIGHT))
-        blob = cv2.cvtColor(blob_img, cv2.COLOR_BGR2RGB).astype(np.float32) / 255.0
-        blob = np.transpose(blob, (2, 0, 1))  # HWC -> CHW
-        blob = np.expand_dims(blob, axis=0)   # 1, 3, 320, 320
+        # 1. Contiguous 4D NCHW input blob (320x320)
+        blob = cv2.dnn.blobFromImage(
+            road_roi,
+            scalefactor=1.0 / 255.0,
+            size=(MODEL_INPUT_WIDTH, MODEL_INPUT_HEIGHT),
+            swapRB=True,
+            crop=False
+        )
 
         # 2. Forward pass based on active backend
         if self.backend == "onnxruntime":
-            preds = self.session.run(None, {self.input_name: blob})[0]  # shape: (1, 9, 2100) or (1, 2100, 9)
+            preds = self.session.run(None, {self.input_name: blob})[0]
         elif self.backend == "opencv_dnn":
             self.net.setInput(blob)
             preds = self.net.forward()

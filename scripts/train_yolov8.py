@@ -50,10 +50,10 @@ def train_and_export(epochs=15, imgsz=320, batch=8):
             shutil.copy2(last_pt, target_pt)
             print(f"[Export] Saved PyTorch model to: {target_pt}")
 
-    # Export to ONNX (Optimized for ARM Cortex-A72 CPU & OpenCV DNN)
-    print(f"[Export] Exporting to ONNX format (opset 17, {imgsz}x{imgsz})...")
+    # Export to ONNX (Optimized for ARM Cortex-A72 CPU, ONNXRuntime & OpenCV DNN)
+    print(f"[Export] Exporting to ONNX format (opset 12, {imgsz}x{imgsz})...")
     trained_model = YOLO(str(target_pt))
-    onnx_path = trained_model.export(format="onnx", imgsz=imgsz, dynamic=False, opset=17)
+    onnx_path = trained_model.export(format="onnx", imgsz=imgsz, dynamic=False, opset=12)
     
     target_onnx = models_dir / "pothole_yolov8n.onnx"
     if Path(onnx_path).exists() and Path(onnx_path).resolve() != target_onnx.resolve():
