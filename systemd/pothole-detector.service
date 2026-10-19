@@ -1,0 +1,16 @@
+[Unit]
+Description=Raspberry Pi Pothole Detection Edge Service
+After=multi-user.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/pds
+ExecStart=/home/pi/pds_venv/bin/python edge/detect_edge.py --headless --source 0
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/pothole_system/service.log
+StandardError=append:/var/log/pothole_system/service_error.log
+
+[Install]
+WantedBy=multi-user.target

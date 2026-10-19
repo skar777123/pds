@@ -1,0 +1,7 @@
+# Lightweight Production Dependencies for Raspberry Pi 4B (ARM Cortex-A72 CPU)
+# Compatible with Raspberry Pi OS 64-bit (Debian Bookworm)
+numpy>=1.23.0
+pillow>=9.5.0
+onnxruntime>=1.16.0
+# Note: On Raspberry Pi OS Bookworm, install OpenCV via apt for hardware acceleration:
+# sudo apt install -y python3-opencv

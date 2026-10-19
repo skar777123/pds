@@ -1,0 +1,37 @@
+{
+  "classes": {
+    "0": "Disintegrated",
+    "1": "Manhole",
+    "2": "Water clogged",
+    "3": "Raveling",
+    "4": "Deformation"
+  },
+  "severity_rules": {
+    "Disintegrated": {
+      "shallow surface pothole": "low",
+      "bowl shape pothole": "medium",
+      "deep pothole": "high"
+    },
+    "Manhole": {
+      "minor manhole pothole": "low",
+      "sunken manhole": "medium",
+      "crumbled manhole": "high",
+      "broken open manhole": "highest"
+    },
+    "Water clogged": {
+      "minor water clogging": "low",
+      "standard water clogging": "medium",
+      "severe water clogging": "high"
+    },
+    "Raveling": {
+      "graveled raveling": "low",
+      "shallow surface raveling": "medium",
+      "wide spreaded raveling": "high"
+    },
+    "Deformation": {
+      "minor trench": "low",
+      "deep trench": "medium",
+      "hyper deep trench": "high"
+    }
+  }
+}

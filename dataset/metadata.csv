@@ -1,0 +1,40 @@
+row_id,category,image_filename,type,condition,severity
+2,Deformation,row_02_deformation_low.jpeg,trencch pothole,minor trench,low
+3,Deformation,row_03_deformation_medium.jpeg,trench pothole,deep trench,medium
+4,Deformation,row_04_deformation_high.jpeg,trench pothole,hyper deep trench,high
+5,Deformation,row_05_deformation_high.jpeg,trench pothole,deep trench,high
+6,Disintegrated,row_06_disintegrated_low.jpeg,shallow surface pothole,smoothen dry small deep,low
+7,Disintegrated,row_07_disintegrated_medium.jpeg,deep pothole,sudden deep pothole,medium
+8,Disintegrated,row_08_disintegrated_low.jpeg,bowl shape pothole,minor pothole,low
+9,Disintegrated,row_09_disintegrated_medium.jpeg,bowl shape pothole,detorated manhole,medium
+10,Disintegrated,row_10_disintegrated_low.jpeg,bowl shape pothole,minor pothole,low
+11,Disintegrated,row_11_disintegrated_medium.jpeg,bowl shape pothole,deep pothole,medium
+12,Disintegrated,row_12_disintegrated_low.jpeg,shallow surface pothole,eroted,low
+13,Disintegrated,row_13_disintegrated_medium.jpeg,surface pothole,fragmented cracking,medium
+14,Disintegrated,row_14_disintegrated_high.jpeg,surface pothole,fragmented cracking,high
+15,Disintegrated,row_15_disintegrated_low.jpeg,shallow surface pothole,smoothen dry small deep,low
+16,Disintegrated,row_16_disintegrated_high.jpeg,surface pothole,multiple surface pothole,high
+17,Disintegrated,row_17_disintegrated_low.jpeg,surface pothole,minor pothole,low
+18,Disintegrated,row_18_disintegrated_medium.jpeg,surface pothole,surface pothole,medium
+19,Disintegrated,row_19_disintegrated_low.jpeg,surface pothole,surface pothole,low
+20,Disintegrated,row_20_disintegrated_medium.jpeg,surface pothole,eroted,medium
+21,Disintegrated,row_21_disintegrated_high.jpeg,surface pothole,patch,high
+22,Manhole,row_22_manhole_low.jpeg,minor manhole pothole,crumbled manhole,low
+23,Manhole,row_23_manhole_medium.jpeg,manhole pothole,detoration surrounding metal manhole,medium
+24,Manhole,row_24_manhole_high.jpeg,manhole pothole,detorated manhole,high
+25,Manhole,row_25_manhole_highest.jpeg,manhole pothole,broken open manhole,highest
+26,Manhole,row_26_manhole_medium.jpeg,manhole pothole,sunken manhole,medium
+27,Manhole,row_27_manhole_high.jpeg,manhole pothole,crumbled manhole,high
+28,Manhole,row_28_manhole_low.jpeg,manhole pothole,smoothen deep manhole,low
+29,Manhole,row_29_manhole_medium.jpeg,manhole pothole,sunken manhole,medium
+30,Raveling,row_30_raveling_low.jpeg,shallow surface raveling,graveled raveling,low
+31,Raveling,row_31_raveling_medium.jpeg,shallow surface raveling,wide spreaded raveling,medium
+32,Raveling,row_32_raveling_high.jpeg,shallow surface raveling,wide spreaded raveling,high
+33,Raveling,row_33_raveling_high.jpeg,shallow surface raveling,wide spreaded raveling,high
+34,Raveling,row_34_raveling_medium.jpeg,shallow surface raveling,Cracked raveling,medium
+35,Water clogged,row_35_water_clogged_low.jpeg,water clogged pothole,minor water clogging,low
+36,Water clogged,row_36_water_clogged_medium.jpeg,water clogged pothole,standard water clogging,medium
+37,Water clogged,row_37_water_clogged_high.jpeg,water clogged pothole,severe water clogging,high
+38,Water clogged,row_38_water_clogged_low.jpeg,water clogged pothole,minor water clogging,low
+39,Water clogged,row_39_water_clogged_low.jpeg,water clogged pothole,standard water clogging,low
+40,Water clogged,row_40_water_clogged_medium.jpeg,water clogged pothole,standard water clogging,medium

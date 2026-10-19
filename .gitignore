@@ -1,0 +1,27 @@
+# Python Caches & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+.venv
+venv/
+pds_venv/
+env/
+
+# Training artifacts & temporary weights
+models/runs/
+*.cache
+dataset/labels/*.cache
+dataset/labels/*/*.cache
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Large raw archive (dataset images are already extracted in dataset/images)
+*.tmp
+logs/*.csv
+!logs/.gitkeep
