@@ -15,6 +15,8 @@ import argparse
 from pathlib import Path
 import cv2
 import numpy as np
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 # Ensure edge module is discoverable
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -199,18 +201,115 @@ class EdgePotholeDetector:
 
         return detections
 
-def run_edge_pipeline(model_path=None, video_src=CAMERA_INDEX, headless=False):
+# Global buffer for web streaming mode
+latest_detection_jpeg = None
+detection_lock = threading.Lock()
+
+class EdgeStreamingHandler(BaseHTTPRequestHandler):
+    """HTTP MJPEG server for live browser viewing of pothole detections."""
+    def do_GET(self):
+        if self.path == '/':
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            html = f"""<!DOCTYPE html>
+<html>
+<head>
+    <title>Raspberry Pi 4B - Pothole Detection Live</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {{ background: #0e0e10; color: #efeff1; font-family: sans-serif; text-align: center; margin: 0; padding: 15px; }}
+        h2 {{ color: #00e676; margin-bottom: 5px; }}
+        .stream-box {{ display: inline-block; border: 3px solid #00e676; border-radius: 8px; overflow: hidden; max-width: 100%; box-shadow: 0 4px 25px rgba(0,230,118,0.25); }}
+        img {{ width: 100%; max-width: 640px; display: block; }}
+        .hud {{ margin-top: 15px; font-family: monospace; font-size: 14px; background: #18181b; padding: 10px; border-radius: 6px; display: inline-block; }}
+    </style>
+</head>
+<body>
+    <h2>Raspberry Pi 4B Pothole Detection HUD</h2>
+    <div class="stream-box">
+        <img src="/stream.mjpg" alt="Live Defect Stream">
+    </div>
+    <br>
+    <div class="hud">Active Pipeline: YOLOv8n (ARM NEON) | Logging: logs/pothole_detections.csv</div>
+</body>
+</html>"""
+            self.wfile.write(html.encode('utf-8'))
+        elif self.path == '/stream.mjpg':
+            self.send_response(200)
+            self.send_header('Age', '0')
+            self.send_header('Cache-Control', 'no-cache, private')
+            self.send_header('Pragma', 'no-cache')
+            self.send_header('Content-Type', 'multipart/x-mixed-replace; boundary=FRAME')
+            self.end_headers()
+            try:
+                while True:
+                    with detection_lock:
+                        if latest_detection_jpeg is None:
+                            time.sleep(0.02)
+                            continue
+                        jpeg_bytes = latest_detection_jpeg
+                    self.wfile.write(b'--FRAME\r\n')
+                    self.send_header('Content-Type', 'image/jpeg')
+                    self.send_header('Content-Length', str(len(jpeg_bytes)))
+                    self.end_headers()
+                    self.wfile.write(jpeg_bytes)
+                    self.wfile.write(b'\r\n')
+                    time.sleep(0.03)
+            except Exception:
+                pass
+        else:
+            self.send_error(404)
+            self.end_headers()
+
+    def log_message(self, format, *args):
+        return
+
+def run_edge_pipeline(model_path=None, video_src=CAMERA_INDEX, headless=False, web=False, port=8080):
     """Main execution loop for real-time edge pothole detection."""
+    global latest_detection_jpeg
+
+    # Auto-detect headless environment (SSH / no monitor)
+    has_display = not (
+        sys.platform.startswith("linux") and 
+        "DISPLAY" not in os.environ and 
+        "WAYLAND_DISPLAY" not in os.environ
+    )
+
+    if not headless and not web and not has_display:
+        print("\n[INFO] No desktop display found ($DISPLAY is not set).")
+        print("       Automatically operating in HEADLESS mode to prevent Qt GUI crash.")
+        print("       (Tip: Pass --web to stream detections to your phone/laptop browser!)\n")
+        headless = True
+
     print("=" * 65)
     print("[EDGE] STARTING EDGE POTHOLE DETECTION SYSTEM (Raspberry Pi 4B)")
     print(f"   Camera Source: {video_src} | Resolution: {FRAME_WIDTH}x{FRAME_HEIGHT}")
     print(f"   ROI Crop: Dropping upper {int(ROI_CROP_TOP_RATIO * 100)}% ({ROI_TOP_PIXELS} px)")
+    print(f"   Mode: {'Web Streamer' if web else ('Headless' if headless else 'Desktop GUI')}")
     print("=" * 65)
 
     detector = EdgePotholeDetector(model_path=model_path)
     tracker = DefectTracker(iou_threshold=0.35, max_lost=8, min_hits_for_confirm=2)
     logger = CSVLogger()
     camera = CameraStream(src=video_src, width=FRAME_WIDTH, height=FRAME_HEIGHT, fps=TARGET_FPS).start()
+
+    if web:
+        try:
+            import socket
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            local_ip = s.getsockname()[0]
+            s.close()
+        except Exception:
+            local_ip = "localhost"
+
+        server = HTTPServer(('0.0.0.0', port), EdgeStreamingHandler)
+        server_thread = threading.Thread(target=server.serve_forever, daemon=True)
+        server_thread.start()
+        print(f"\n🌐 LIVE WEB DETECTION STREAMER ACTIVE!")
+        print(f"   👉 Open in your phone/laptop browser: http://{local_ip}:{port}")
+        print(f"   Press Ctrl+C to terminate.\n")
 
     fps_history = []
     total_detections_logged = 0
@@ -245,8 +344,8 @@ def run_edge_pipeline(model_path=None, video_src=CAMERA_INDEX, headless=False):
                 fps_history.pop(0)
             avg_fps = sum(fps_history) / len(fps_history)
 
-            # 6. Visualization & On-Screen Display (if not running headless)
-            if not headless:
+            # 6. Visualization & On-Screen Display (if GUI or Web Streamer is enabled)
+            if not headless or web:
                 # Draw ROI Horizon line
                 cv2.line(frame, (0, ROI_TOP_PIXELS), (FRAME_WIDTH, ROI_TOP_PIXELS), (0, 0, 255), 2)
                 cv2.putText(frame, "HORIZON MASK (UPPER 40% CROPPED)", (10, ROI_TOP_PIXELS - 8),
@@ -255,7 +354,6 @@ def run_edge_pipeline(model_path=None, video_src=CAMERA_INDEX, headless=False):
                 # Draw Active Tracked Defects
                 for track in active_tracks:
                     bx1, by1, bx2, by2 = track.box
-                    # Severity color coding: Low=Green, Med=Yellow, High=Orange, Highest=Red
                     color_map = {
                         "low": (0, 255, 0),
                         "medium": (0, 255, 255),
@@ -275,16 +373,26 @@ def run_edge_pipeline(model_path=None, video_src=CAMERA_INDEX, headless=False):
                 cv2.putText(frame, f"Verified Defects Logged: {total_detections_logged}", (10, 50),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 1)
 
-                cv2.imshow("Raspberry Pi 4B Pothole Detection", frame)
-                if cv2.waitKey(1) & 0xFF == ord('q'):
-                    print("[Pipeline] Stop requested by user.")
-                    break
+                if web:
+                    _, jpeg = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                    with detection_lock:
+                        latest_detection_jpeg = jpeg.tobytes()
+
+                if not headless and has_display:
+                    try:
+                        cv2.imshow("Raspberry Pi 4B Pothole Detection", frame)
+                        if cv2.waitKey(1) & 0xFF == ord('q'):
+                            print("[Pipeline] Stop requested by user.")
+                            break
+                    except Exception:
+                        headless = True
 
     except KeyboardInterrupt:
         print("\n[Pipeline] Interrupted by user.")
     finally:
         camera.stop()
-        cv2.destroyAllWindows()
+        if not headless and has_display:
+            cv2.destroyAllWindows()
         print(f"[Pipeline] Finalized. Total logged road defects: {total_detections_logged}")
 
 if __name__ == "__main__":
@@ -292,6 +400,8 @@ if __name__ == "__main__":
     parser.add_argument("--model", type=str, default=None, help="Path to ONNX or TFLite model")
     parser.add_argument("--source", type=int, default=CAMERA_INDEX, help="Webcam device index (default: 0)")
     parser.add_argument("--headless", action="store_true", help="Run without GUI window for background daemon")
+    parser.add_argument("--web", action="store_true", help="Stream live detections over HTTP to browser")
+    parser.add_argument("--port", type=int, default=8080, help="Web stream port (default: 8080)")
     args = parser.parse_args()
 
-    run_edge_pipeline(model_path=args.model, video_src=args.source, headless=args.headless)
+    run_edge_pipeline(model_path=args.model, video_src=args.source, headless=args.headless, web=args.web, port=args.port)
