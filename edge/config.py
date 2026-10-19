@@ -37,10 +37,14 @@ ONNX_MODEL_PATH = MODEL_DIR / "pothole_yolov8n.onnx"
 CLASSIFIER_MODEL_PATH = MODEL_DIR / "pothole_classifier_mobilenetv2.tflite"
 
 # Detection & Tracking Thresholds
-CONFIDENCE_THRESHOLD = 0.35           # Min confidence to consider detection
+CONFIDENCE_THRESHOLD = 0.55           # Raised to 0.55 to strictly eliminate false positive noise
 NMS_IOU_THRESHOLD = 0.45              # Non-Maximum Suppression IoU overlap limit
 TRACKER_MAX_LOST_FRAMES = 10          # Frames before inactive track is deleted
 MIN_HITS_FOR_ALERT = 2                # Consecutive detections to confirm physical defect
+
+# Geometric Road Constraints (Pothole bounds)
+MAX_DEFECT_AREA_RATIO = 0.65          # Reject false positive boxes spanning > 65% of road
+MIN_DEFECT_AREA_RATIO = 0.008         # Reject single-pixel sensor noise (< 0.8% of road)
 
 # Dataset Taxonomy (PRD Section 3 & Pothole_detection_dataset.xlsx)
 CLASS_NAMES = [

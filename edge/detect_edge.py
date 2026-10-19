@@ -25,6 +25,7 @@ from edge.config import (
     CAMERA_INDEX, FRAME_WIDTH, FRAME_HEIGHT, TARGET_FPS,
     ROI_CROP_TOP_RATIO, ROI_TOP_PIXELS, MODEL_INPUT_WIDTH, MODEL_INPUT_HEIGHT,
     CONFIDENCE_THRESHOLD, NMS_IOU_THRESHOLD,
+    MAX_DEFECT_AREA_RATIO, MIN_DEFECT_AREA_RATIO,
     TFLITE_MODEL_PATH, ONNX_MODEL_PATH,
     CLASS_NAMES, SEVERITY_LEVELS
 )
@@ -165,10 +166,25 @@ class EdgePotholeDetector:
                 bw = min(w_roi - x1, bw)
                 bh = min(h_roi - y1, bh)
 
-                if bw > 10 and bh > 10:
-                    boxes.append([x1, y1, bw, bh])
-                    confidences.append(conf)
-                    class_ids.append(class_id)
+                rel_area = (bw * bh) / float(w_roi * h_roi)
+                aspect_ratio = bw / float(bh) if bh > 0 else 1.0
+
+                # Strict False-Positive Filtering:
+                # 1. Potholes are localized anomalies - reject boxes covering > 65% of road
+                # 2. Reject boxes spanning nearly the full road width (>= 85%) or height (>= 80%)
+                # 3. Reject tiny sensor speckle noise (< MIN_DEFECT_AREA_RATIO)
+                # 4. Reject extreme razor-thin streaks
+                if (rel_area > MAX_DEFECT_AREA_RATIO or 
+                    rel_area < MIN_DEFECT_AREA_RATIO or
+                    bw > 0.85 * w_roi or 
+                    bh > 0.80 * h_roi or
+                    aspect_ratio > 4.5 or 
+                    aspect_ratio < 0.22):
+                    continue
+
+                boxes.append([x1, y1, bw, bh])
+                confidences.append(conf)
+                class_ids.append(class_id)
 
         # 3. Apply Non-Maximum Suppression (NMS)
         detections = []
@@ -269,7 +285,7 @@ class EdgeStreamingHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         return
 
-def run_edge_pipeline(model_path=None, video_src=CAMERA_INDEX, headless=False, web=False, port=8080):
+def run_edge_pipeline(model_path=None, video_src=CAMERA_INDEX, conf_thresh=CONFIDENCE_THRESHOLD, headless=False, web=False, port=8080):
     """Main execution loop for real-time edge pothole detection."""
     global latest_detection_jpeg
 
@@ -290,10 +306,11 @@ def run_edge_pipeline(model_path=None, video_src=CAMERA_INDEX, headless=False, w
     print("[EDGE] STARTING EDGE POTHOLE DETECTION SYSTEM (Raspberry Pi 4B)")
     print(f"   Camera Source: {video_src} | Resolution: {FRAME_WIDTH}x{FRAME_HEIGHT}")
     print(f"   ROI Crop: Dropping upper {int(ROI_CROP_TOP_RATIO * 100)}% ({ROI_TOP_PIXELS} px)")
+    print(f"   Confidence Filter: >= {conf_thresh:.2f} (Strict Pothole Mode)")
     print(f"   Mode: {'Web Streamer' if web else ('Headless' if headless else 'Desktop GUI')}")
     print("=" * 65)
 
-    detector = EdgePotholeDetector(model_path=model_path)
+    detector = EdgePotholeDetector(model_path=model_path, conf_thresh=conf_thresh)
     tracker = DefectTracker(iou_threshold=0.35, max_lost=8, min_hits_for_confirm=2)
     logger = CSVLogger()
     camera = CameraStream(src=video_src, width=FRAME_WIDTH, height=FRAME_HEIGHT, fps=TARGET_FPS).start()
@@ -403,9 +420,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Raspberry Pi Pothole Detector")
     parser.add_argument("--model", type=str, default=None, help="Path to ONNX or TFLite model")
     parser.add_argument("--source", type=int, default=CAMERA_INDEX, help="Webcam device index (default: 0)")
+    parser.add_argument("--conf", type=float, default=CONFIDENCE_THRESHOLD, help=f"Confidence threshold (default: {CONFIDENCE_THRESHOLD})")
     parser.add_argument("--headless", action="store_true", help="Run without GUI window for background daemon")
     parser.add_argument("--web", action="store_true", help="Stream live detections over HTTP to browser")
     parser.add_argument("--port", type=int, default=8080, help="Web stream port (default: 8080)")
     args = parser.parse_args()
 
-    run_edge_pipeline(model_path=args.model, video_src=args.source, headless=args.headless, web=args.web, port=args.port)
+    run_edge_pipeline(
+        model_path=args.model,
+        video_src=args.source,
+        conf_thresh=args.conf,
+        headless=args.headless,
+        web=args.web,
+        port=args.port
+    )
