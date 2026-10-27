@@ -1,0 +1,17 @@
+# Set default behavior for all files to normalize line endings
+* text=auto
+
+# Enforce LF endings on shell scripts and systemd units for Linux execution
+*.sh text eol=lf
+systemd/* text eol=lf
+*.service text eol=lf
+
+# Binary files
+*.pt binary
+*.onnx binary
+*.tflite binary
+*.xlsx binary
+*.docx binary
+*.jpeg binary
+*.jpg binary
+*.png binary

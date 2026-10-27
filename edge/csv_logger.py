@@ -6,7 +6,7 @@ Strictly conforms to PRD Section 4 logging requirements.
 import os
 import csv
 import threading
-from datetime import datetime
+from datetime import datetime, timezone
 from edge.config import CSV_LOG_PATH, ENABLE_CONSOLE_LOG
 
 CSV_HEADER = [
@@ -45,7 +45,7 @@ class CSVLogger:
         track: TrackedDefect instance
         approx_speed: Estimated or GPS vehicle speed in km/h
         """
-        now_iso = datetime.utcnow().isoformat() + "Z"
+        now_iso = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
         box = track.box  # [x1, y1, x2, y2]
         x1 = box[0]
         y1 = box[1]

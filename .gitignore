@@ -1,27 +1,51 @@
-# Python Caches & Virtual Environments
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
+
+# Python Environments
 .env
 .venv
 venv/
 pds_venv/
 env/
+ENV/
 
-# Training artifacts & temporary weights
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Model training artifacts & temporary caches
+runs/
 models/runs/
 *.cache
 dataset/labels/*.cache
 dataset/labels/*/*.cache
 
-# IDE & OS
+# Runtime logs
+logs/*.csv
+!logs/.gitkeep
+*.log
+
+# Temporary & Lock Files
+*.tmp
+*.temp
+*.swp
+*~
+~$*
+
+# OS & Editor generated files
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# Large raw archive (dataset images are already extracted in dataset/images)
-*.tmp
-logs/*.csv
-!logs/.gitkeep
